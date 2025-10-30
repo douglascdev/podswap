@@ -1,0 +1,13 @@
+{
+    "id": "devenv",
+    "name": "devenv",
+    "version": "1.0.0",
+    "image": "fedora:42",
+    "description": "Base dev env",
+    "features": {
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "25"
+        },
+        "ghcr.io/devcontainers/features/desktop-lite:1": {}
+    },
+}

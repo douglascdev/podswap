@@ -1,0 +1,17 @@
+{
+    "id": "dev"
+    "name": "godev",
+    "features": {
+        "./devcontainer-feature": {
+            "language": "go"
+        }
+    },
+    "image": "fedora:42",
+    "settings": {
+        "go.useLanguageServer": true
+    },
+    "remoteUser": "dev",
+    "containerUser": "dev",
+    "postCreateCommand": "bash -c '[ -f \"go.mod\" ] && go mod tidy' || echo \"\""
+}
+
