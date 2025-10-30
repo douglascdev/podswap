@@ -1,5 +1,4 @@
 {
-    "id": "dev"
     "name": "godev",
     "features": {
         "./devcontainer-feature": {
