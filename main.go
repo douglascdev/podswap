@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 	fmt.Println("Press Ctrl+C to trigger a graceful shutdown.")
 	<-ctx.Done()
