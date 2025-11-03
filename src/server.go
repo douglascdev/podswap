@@ -29,7 +29,7 @@ func WebhookHandler(response http.ResponseWriter, request *http.Request) {
 }
 
 func Start(ctx context.Context) error {
-	server := &http.Server{Addr: ":6666"}
+	server := &http.Server{Addr: ":8888"}
 	http.HandleFunc("/webhook", WebhookHandler)
 
 	var serveErrCh chan error
