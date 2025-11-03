@@ -19,7 +19,7 @@ func WebhookHandler(response http.ResponseWriter, request *http.Request) {
 		response.WriteHeader(400)
 		return
 	default:
-		log.Printf("returning due to unhandled webhook event: %v", event)
+		log.Printf("returning due to unhandled webhook event: %v\n", event)
 		response.WriteHeader(200)
 		return
 	}
@@ -34,7 +34,9 @@ func Start(ctx context.Context) error {
 
 	var serveErrCh chan error
 	go func() {
+		log.Println("started server")
 		err := server.ListenAndServe()
+		log.Println("stopped the server")
 		serveErrCh <- err
 	}()
 
@@ -44,12 +46,12 @@ func Start(ctx context.Context) error {
 		case err = <-serveErrCh:
 			return err
 		case <-ctx.Done():
-			log.Print("stopping server")
+			log.Println("context is done, stopping the server")
 			ctx, cancel := context.WithTimeout(ctx, time.Second*5)
 			defer cancel()
 
 			if err := server.Shutdown(ctx); err != nil {
-				log.Printf("error trying to shut down server: %v", err)
+				log.Printf("error trying to shut down server: %v\n", err)
 				return err
 			}
 
