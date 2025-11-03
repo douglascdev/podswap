@@ -4,7 +4,8 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
-	"podswap/src"
+	podswap "podswap/src"
+	"strings"
 	"testing"
 	"time"
 )
@@ -40,15 +41,48 @@ func TestStart(t *testing.T) {
 }
 
 func TestWebhookHandler(t *testing.T) {
+	testServer := httptest.NewServer(nil)
+	defer testServer.Close()
+
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
-		response http.ResponseWriter
-		request  *http.Request
-	}{}
+		response     http.ResponseWriter
+		request      *http.Request
+		expectedCode int
+		githubEvent  string
+	}{
+		{
+			"Push",
+			httptest.NewRecorder(),
+			httptest.NewRequest("POST", testServer.URL, strings.NewReader("")),
+			200,
+			"push",
+		},
+		{
+			"Unhandled",
+			httptest.NewRecorder(),
+			httptest.NewRequest("POST", testServer.URL, strings.NewReader("")),
+			200,
+			"asd",
+		},
+		{
+			"Empty",
+			httptest.NewRecorder(),
+			httptest.NewRequest("POST", testServer.URL, strings.NewReader("")),
+			400,
+			"",
+		},
+	}
+
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			podswap.WebhookHandler(tt.response, tt.request)
-		})
+		if tt.githubEvent != "" {
+			tt.request.Header.Set("x-github-event", tt.githubEvent)
+		}
+		podswap.WebhookHandler(tt.response, tt.request)
+		response := tt.response.(*httptest.ResponseRecorder)
+		if response.Code != tt.expectedCode {
+			t.Errorf("request with %s event should return %d, got %d", tt.name, tt.expectedCode, response.Code)
+		}
 	}
 }
