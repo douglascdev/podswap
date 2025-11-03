@@ -25,8 +25,7 @@ func TestStart(t *testing.T) {
 				cancel()
 			}()
 
-			testServer := httptest.NewUnstartedServer(nil)
-			gotErr := podswap.Start(ctx, testServer.URL)
+			gotErr := podswap.Start(ctx)
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("Start() failed: %v", gotErr)
@@ -41,9 +40,6 @@ func TestStart(t *testing.T) {
 }
 
 func TestWebhookHandler(t *testing.T) {
-	testServer := httptest.NewServer(nil)
-	defer testServer.Close()
-
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for target function.
@@ -55,21 +51,21 @@ func TestWebhookHandler(t *testing.T) {
 		{
 			"Push",
 			httptest.NewRecorder(),
-			httptest.NewRequest("POST", testServer.URL, strings.NewReader("")),
+			httptest.NewRequest("POST", "/webhook", strings.NewReader("")),
 			200,
 			"push",
 		},
 		{
 			"Unhandled",
 			httptest.NewRecorder(),
-			httptest.NewRequest("POST", testServer.URL, strings.NewReader("")),
+			httptest.NewRequest("POST", "/webhook", strings.NewReader("")),
 			200,
 			"asd",
 		},
 		{
 			"Empty",
 			httptest.NewRecorder(),
-			httptest.NewRequest("POST", testServer.URL, strings.NewReader("")),
+			httptest.NewRequest("POST", "/webhook", strings.NewReader("")),
 			400,
 			"",
 		},

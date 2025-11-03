@@ -28,8 +28,8 @@ func WebhookHandler(response http.ResponseWriter, request *http.Request) {
 	response.WriteHeader(200)
 }
 
-func Start(ctx context.Context, addr string) error {
-	server := &http.Server{Addr: addr}
+func Start(ctx context.Context) error {
+	server := &http.Server{Addr: ":6666"}
 	http.HandleFunc("/webhook", WebhookHandler)
 
 	var serveErrCh chan error
