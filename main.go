@@ -2,49 +2,39 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"os/signal"
 	podswap "podswap/src"
 	"syscall"
 )
 
-type Config struct {
-	Port uint   `json:"port"`
-	Host string `json:"host"`
-}
-
-func NewConfig() *Config {
-	return &Config{
-		Port: 8888,
-		Host: "localhost",
-	}
-}
-
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 
-	var (
-		template = flag.Bool("template", false, "output generated config template to stdout")
-	)
-	flag.Parse()
-
-	if *template {
-		cfg := NewConfig()
-		s, err := json.MarshalIndent(cfg, "", "  ")
-		if err != nil {
-			log.Fatalf("failed to generate config template")
-		}
-		fmt.Printf("%s", s)
-		return
+	flagset := flag.NewFlagSet("main", flag.ExitOnError)
+	flagset.SetOutput(os.Stdout)
+	arguments, err := podswap.ParseArguments(flagset, os.Args[1:])
+	if err != nil {
+		log.Fatalf("failed to parse arguments: %s", err)
 	}
+
+	var (
+		port    = *arguments.Port
+		host    = *arguments.Host
+		workdir = arguments.WorkDir
+	)
+
+	log.Printf("using port \"%d\"", port)
+	log.Printf("using host %q", host)
+	log.Printf("using workdir %q", workdir)
 
 	fmt.Println("Press Ctrl+C to trigger a graceful shutdown.")
 
-	err := podswap.Start(ctx)
+	err = podswap.Start(ctx, arguments)
 	if err != nil {
 		log.Printf("Server err: %v", err)
 	}

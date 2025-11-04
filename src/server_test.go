@@ -2,6 +2,7 @@ package podswap_test
 
 import (
 	"context"
+	"flag"
 	"net/http"
 	"net/http/httptest"
 	podswap "podswap/src"
@@ -25,7 +26,11 @@ func TestStart(t *testing.T) {
 				cancel()
 			}()
 
-			gotErr := podswap.Start(ctx)
+			args, err := podswap.ParseArguments(flag.NewFlagSet("", flag.PanicOnError), []string{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			gotErr := podswap.Start(ctx, args)
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("Start() failed: %v", gotErr)

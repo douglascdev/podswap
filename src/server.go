@@ -2,6 +2,7 @@ package podswap
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -28,8 +29,8 @@ func WebhookHandler(response http.ResponseWriter, request *http.Request) {
 	response.WriteHeader(200)
 }
 
-func Start(ctx context.Context) error {
-	server := &http.Server{Addr: ":8888"}
+func Start(ctx context.Context, arguments *Arguments) error {
+	server := &http.Server{Addr: fmt.Sprintf("%s:%d", *arguments.Host, *arguments.Port)}
 	http.HandleFunc("/webhook", WebhookHandler)
 
 	var serveErrCh chan error
