@@ -1,4 +1,4 @@
-module podswap
+module github.com/douglascdev/podswap
 
 go 1.24.9
 
