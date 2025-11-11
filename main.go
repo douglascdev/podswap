@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	podswap "podswap/src"
@@ -19,7 +19,9 @@ func main() {
 	flagset.SetOutput(os.Stdout)
 	arguments, err := podswap.ParseArguments(flagset, os.Args[1:])
 	if err != nil {
-		log.Fatalf("failed to parse arguments: %s", err)
+		err := fmt.Errorf("failed to parse arguments: %v", err)
+		slog.Error(err.Error())
+		return
 	}
 
 	var (
@@ -28,15 +30,15 @@ func main() {
 		workdir = arguments.WorkDir
 	)
 
-	log.Printf("using port \"%d\"", port)
-	log.Printf("using host %q", host)
-	log.Printf("using workdir %q", workdir)
+	slog.Info(fmt.Sprintf("using port \"%d\"", port))
+	slog.Info(fmt.Sprintf("using host %q", host))
+	slog.Info(fmt.Sprintf("using workdir %q", workdir))
 
 	fmt.Println("Press Ctrl+C to trigger a graceful shutdown.")
 
 	err = podswap.Start(ctx, arguments)
 	if err != nil {
-		log.Printf("Server err: %v", err)
+		slog.Error(fmt.Sprintf("server err: %v", err))
 	}
 	<-ctx.Done()
 	fmt.Println("Main routine exiting. All workers have been notified.")

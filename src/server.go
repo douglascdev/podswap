@@ -3,24 +3,24 @@ package podswap
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 )
 
 func WebhookHandler(response http.ResponseWriter, request *http.Request) {
-	log.Println("received webhook payload")
+	slog.Info("received webhook payload")
 
 	event := request.Header.Get("x-github-event")
 	switch event {
 	case "push":
-		log.Println("push webhook payload received, continuing")
+		slog.Info("push webhook payload received, continuing")
 	case "":
-		log.Println("x-github-event header not found, bad request")
+		slog.Info("x-github-event header not found, bad request")
 		response.WriteHeader(400)
 		return
 	default:
-		log.Printf("returning due to unhandled webhook event: %v\n", event)
+		slog.Info(fmt.Sprintf("returning due to unhandled webhook event: %v\n", event))
 		response.WriteHeader(200)
 		return
 	}
@@ -35,9 +35,9 @@ func Start(ctx context.Context, arguments *Arguments) error {
 
 	var serveErrCh chan error
 	go func() {
-		log.Println("started server")
+		slog.Info("started server")
 		err := server.ListenAndServe()
-		log.Println("stopped the server")
+		slog.Info("stopped the server")
 		serveErrCh <- err
 	}()
 
@@ -47,12 +47,12 @@ func Start(ctx context.Context, arguments *Arguments) error {
 		case err = <-serveErrCh:
 			return err
 		case <-ctx.Done():
-			log.Println("context is done, stopping the server")
+			slog.Info("context is done, stopping the server")
 			ctx, cancel := context.WithTimeout(ctx, time.Second*5)
 			defer cancel()
 
 			if err := server.Shutdown(ctx); err != nil {
-				log.Printf("error trying to shut down server: %v\n", err)
+				slog.Error(fmt.Sprintf("error trying to shut down server: %v\n", err))
 				return err
 			}
 
