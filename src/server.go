@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"golang.ngrok.com/ngrok/v2"
@@ -85,21 +86,41 @@ func (s *WebhookServer) commandRunner(ctx context.Context) {
 			// TODO: command argument for timeout duration
 			buildTimeoutCtx, buildCancel := context.WithTimeout(ctx, time.Second*500)
 			defer buildCancel()
-			buildCmd := exec.CommandContext(buildTimeoutCtx, s.buildCmd)
+			var buildCmd *exec.Cmd
+			args := strings.Split(s.buildCmd, " ")
+			switch len(args) {
+			case 0:
+				slog.Error("failed to run podswap request, buildCmd is empty")
+				continue
+			case 1:
+				buildCmd = exec.CommandContext(buildTimeoutCtx, args[0])
+			default:
+				buildCmd = exec.CommandContext(buildTimeoutCtx, args[0], args[1:]...)
+			}
 			buildCmd.Dir = s.workdir
-			err := buildCmd.Run()
+			out, err := buildCmd.CombinedOutput()
 			if err != nil {
-				slog.Error("failed to run buildCmd", slog.Any("err", err))
+				slog.Error("failed to run buildCmd", slog.Any("err", err), slog.Any("result", out))
 				continue
 			}
 
 			deployTimeoutCtx, deployCancel := context.WithTimeout(ctx, time.Second*500)
 			defer deployCancel()
-			deployCmd := exec.CommandContext(deployTimeoutCtx, s.deployCmd)
+			var deployCmd *exec.Cmd
+			args = strings.Split(s.deployCmd, " ")
+			switch len(args) {
+			case 0:
+				slog.Error("failed to run podswap request, deployCmd is empty")
+				continue
+			case 1:
+				deployCmd = exec.CommandContext(deployTimeoutCtx, args[0])
+			default:
+				deployCmd = exec.CommandContext(deployTimeoutCtx, args[0], args[1:]...)
+			}
 			deployCmd.Dir = s.workdir
-			err = deployCmd.Run()
+			out, err = deployCmd.CombinedOutput()
 			if err != nil {
-				slog.Error("failed to run deployCmd", slog.Any("err", err))
+				slog.Error("failed to run deployCmd", slog.Any("err", err), slog.Any("result", out))
 				continue
 			}
 		}
