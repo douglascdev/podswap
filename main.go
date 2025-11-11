@@ -15,11 +15,12 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 
-	flagset := flag.NewFlagSet("main", flag.ExitOnError)
+	flagset := flag.NewFlagSet("podswap", flag.ExitOnError)
 	flagset.SetOutput(os.Stdout)
 	arguments, err := podswap.ParseArguments(flagset, os.Args[1:])
 	if err != nil {
 		slog.Error("failed to parse arguments", slog.Any("err", err))
+		flagset.Usage()
 		return
 	}
 
@@ -37,8 +38,8 @@ func main() {
 		workdir   = arguments.WorkDir
 	)
 
-	slog.Info(fmt.Sprintf("using build-cmd '%s %s'", buildCmd.Path, buildCmd.Args))
-	slog.Info(fmt.Sprintf("using deploy-cmd '%s %s'", deployCmd.Path, deployCmd.Args))
+	slog.Info(fmt.Sprintf("using build-cmd %q", buildCmd.Args))
+	slog.Info(fmt.Sprintf("using deploy-cmd %q", deployCmd.Args))
 	slog.Info(fmt.Sprintf("using workdir %q", workdir))
 
 	slog.Info("Press Ctrl+C to trigger a graceful shutdown.")

@@ -97,13 +97,13 @@ func TestWebhookHandler(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		tt.request.Header.Set("x-github-event", tt.githubEvent)
-		os.Setenv("WEBHOOK_SECRET", tt.webhookSecret)
-		podswap.WebhookHandler(tt.response, tt.request)
-		response := tt.response.(*httptest.ResponseRecorder)
-		if response.Code != tt.expectedCode {
-			t.Errorf("request with %q event should return %d, got %d", tt.name, tt.expectedCode, response.Code)
+	for _, test := range tests {
+		test.request.Header.Set("x-github-event", test.githubEvent)
+		os.Setenv("WEBHOOK_SECRET", test.webhookSecret)
+		podswap.WebhookHandler(test.response, test.request)
+		response := test.response.(*httptest.ResponseRecorder)
+		if response.Code != test.expectedCode {
+			t.Errorf("request with %q event should return %d, got %d", test.name, test.expectedCode, response.Code)
 		}
 	}
 }

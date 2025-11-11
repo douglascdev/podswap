@@ -21,18 +21,31 @@ func TestParseArguments(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// add a made-up executable to path to later see if it's correctly detected
 	dir, err := os.MkdirTemp("", "glorp")
 	if err != nil {
 		t.Fatal(fmt.Errorf("failed to create temp dir: %w", err))
 	}
-	tempFile, err := os.OpenFile(filepath.Join(dir, "glorp"), os.O_CREATE|os.O_RDWR, 0765)
-	_, err = tempFile.Write([]byte("#!/bin/sh\necho 'Hello from glorp'"))
+	defer os.RemoveAll(dir)
+
+	// add a made-up executable to path to later see if it's correctly detected
+	glorpTempFile, err := os.OpenFile(filepath.Join(dir, "glorp"), os.O_CREATE|os.O_RDWR, 0765)
+	_, err = glorpTempFile.Write([]byte("#!/bin/sh\necho 'Hello from glorp'"))
 	if err != nil {
 		t.Fatalf("failed to write to temp file: %v", err)
 	}
-	defer os.RemoveAll(tempFile.Name())
-	tempFile.Close()
+	glorpTempFile.Close()
+	err = os.Setenv("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), dir))
+	if err != nil {
+		t.Fatal(fmt.Errorf("failed to set $PATH: %w", err))
+	}
+
+	// add a fake docker executable to path to later see if it's correctly detected
+	dockerTempFile, err := os.OpenFile(filepath.Join(dir, "docker"), os.O_CREATE|os.O_RDWR, 0765)
+	_, err = dockerTempFile.Write([]byte("#!/bin/sh\necho 'Hello from docker'"))
+	if err != nil {
+		t.Fatalf("failed to write to temp file: %v", err)
+	}
+	dockerTempFile.Close()
 	err = os.Setenv("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), dir))
 	if err != nil {
 		t.Fatal(fmt.Errorf("failed to set $PATH: %w", err))
@@ -77,8 +90,8 @@ func TestParseArguments(t *testing.T) {
 			nil,
 			func(a *podswap.Arguments) error {
 				// build-cmd
-				if a.BuildCommand.Path != tempFile.Name() {
-					return fmt.Errorf("expected build-cmd path to be %s, got %s", tempFile.Name(), a.BuildCommand.Path)
+				if a.BuildCommand.Path != glorpTempFile.Name() {
+					return fmt.Errorf("expected build-cmd path to be %s, got %s", glorpTempFile.Name(), a.BuildCommand.Path)
 				}
 				expectedBuildArgs := []string{"compose", "build"}
 				got := a.BuildCommand.Args[1:]
@@ -87,8 +100,38 @@ func TestParseArguments(t *testing.T) {
 				}
 
 				// deploy-cmd
-				if a.DeployCommand.Path != tempFile.Name() {
-					return fmt.Errorf("expected deploy-cmd path to be %s, got %s", tempFile.Name(), a.DeployCommand.Path)
+				if a.DeployCommand.Path != glorpTempFile.Name() {
+					return fmt.Errorf("expected deploy-cmd path to be %s, got %s", glorpTempFile.Name(), a.DeployCommand.Path)
+				}
+				expectedDeployArgs := []string{"compose", "up", "-d"}
+				got = a.DeployCommand.Args[1:]
+				if !slices.Equal(got, expectedDeployArgs) {
+					return fmt.Errorf("expected deployArgs to be %v, got %v", expectedDeployArgs, got)
+				}
+
+				return nil
+			},
+		},
+		{
+			"Check if it runs with default build-cmd and deploy-cmd",
+			flag.NewFlagSet("", flag.PanicOnError),
+			[]string{},
+			false,
+			nil,
+			func(a *podswap.Arguments) error {
+				// build-cmd
+				if a.BuildCommand.Path != glorpTempFile.Name() {
+					return fmt.Errorf("expected build-cmd path to be %s, got %s", glorpTempFile.Name(), a.BuildCommand.Path)
+				}
+				expectedBuildArgs := []string{"compose", "build"}
+				got := a.BuildCommand.Args[1:]
+				if !slices.Equal(got, expectedBuildArgs) {
+					return fmt.Errorf("expected buildArgs to be %v, got %v", expectedBuildArgs, got)
+				}
+
+				// deploy-cmd
+				if a.DeployCommand.Path != glorpTempFile.Name() {
+					return fmt.Errorf("expected deploy-cmd path to be %s, got %s", glorpTempFile.Name(), a.DeployCommand.Path)
 				}
 				expectedDeployArgs := []string{"compose", "up", "-d"}
 				got = a.DeployCommand.Args[1:]

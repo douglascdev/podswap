@@ -20,7 +20,6 @@ type Arguments struct {
 func ParseArguments(flagset *flag.FlagSet, arguments []string) (result *Arguments, err error) {
 	result = &Arguments{}
 
-	// workdir
 	setWorkDir := func(s string) error {
 		s, err = filepath.Abs(s)
 		if err != nil {
@@ -38,18 +37,7 @@ func ParseArguments(flagset *flag.FlagSet, arguments []string) (result *Argument
 		return nil
 	}
 
-	wd, err := os.Getwd()
-	if err != nil {
-		return result, err
-	}
-	err = setWorkDir(wd)
-	if err != nil {
-		return result, err
-	}
-	flagset.Func("workdir", "working directory where containers will be deployed from", setWorkDir)
-
-	// build-cmd
-	flagset.Func("build-cmd", "command to run after the webhook is triggered", func(s string) error {
+	setBuildCmd := func(s string) error {
 		cmds := strings.Split(s, " ")
 		if len(cmds) < 1 {
 			return errors.New("build-cmd was not set")
@@ -67,10 +55,9 @@ func ParseArguments(flagset *flag.FlagSet, arguments []string) (result *Argument
 		slog.Debug("set build-cmd", slog.String("cmdPath", cmdPath), slog.Any("args", cmds[1:]))
 
 		return nil
-	})
+	}
 
-	// deploy-cmd
-	flagset.Func("deploy-cmd", "command to run after the webhook is triggered", func(s string) error {
+	setDeployCmd := func(s string) error {
 		cmds := strings.Split(s, " ")
 		if len(cmds) < 1 {
 			return errors.New("deploy-cmd was not set")
@@ -88,9 +75,44 @@ func ParseArguments(flagset *flag.FlagSet, arguments []string) (result *Argument
 		slog.Debug("set deploy-cmd", slog.String("cmdPath", cmdPath), slog.Any("args", cmds[1:]))
 
 		return nil
-	})
+	}
+	defaultExecutable := "docker"
+	defaultBuild := fmt.Sprintf("%s compose build", defaultExecutable)
+	defaultDeploy := fmt.Sprintf("%s compose up -d --force-recreate", defaultExecutable)
+
+	flagset.Func("workdir", "working directory where containers will be deployed from(default: current directory).", setWorkDir)
+	flagset.Func("build-cmd", fmt.Sprintf("command to run after the webhook is triggered(default: %q).", defaultBuild), setBuildCmd)
+	flagset.Func("deploy-cmd", fmt.Sprintf("command to run after the build is finished(default: %q).", defaultDeploy), setDeployCmd)
 
 	flagset.Parse(arguments)
+
+	// workdir default
+	if result.WorkDir == "" {
+		wd, err := os.Getwd()
+		if err != nil {
+			return result, err
+		}
+		err = setWorkDir(wd)
+		if err != nil {
+			return result, err
+		}
+	}
+
+	// build-cmd default
+	if result.BuildCommand == nil {
+		err = setBuildCmd(defaultBuild)
+		if err != nil {
+			return result, fmt.Errorf("default executable %q for argument build-cmd not found, please set build-cmd yourself.", defaultExecutable)
+		}
+	}
+
+	// deploy-cmd default
+	if result.DeployCommand == nil {
+		err = setDeployCmd(defaultDeploy)
+		if err != nil {
+			return result, fmt.Errorf("default executable %q for argument deploy-cmd not found, please set deploy-cmd yourself.", defaultExecutable)
+		}
+	}
 
 	return result, nil
 }
