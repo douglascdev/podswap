@@ -19,8 +19,7 @@ func main() {
 	flagset.SetOutput(os.Stdout)
 	arguments, err := podswap.ParseArguments(flagset, os.Args[1:])
 	if err != nil {
-		err := fmt.Errorf("failed to parse arguments: %v", err)
-		slog.Error(err.Error())
+		slog.Error("failed to parse arguments", slog.Any("err", err))
 		return
 	}
 
@@ -38,8 +37,8 @@ func main() {
 		workdir   = arguments.WorkDir
 	)
 
-	slog.Info(fmt.Sprintf("using buildCmd %q", buildCmd))
-	slog.Info(fmt.Sprintf("using deployCmd %q", deployCmd))
+	slog.Info(fmt.Sprintf("using build-cmd %q", buildCmd))
+	slog.Info(fmt.Sprintf("using deploy-cmd %q", deployCmd))
 	slog.Info(fmt.Sprintf("using workdir %q", workdir))
 
 	slog.Info("Press Ctrl+C to trigger a graceful shutdown.")
