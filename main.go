@@ -27,6 +27,11 @@ func main() {
 	if _, isSet := os.LookupEnv("NGROK_AUTHTOKEN"); !isSet {
 		slog.Warn("environment variable NGROK_AUTHTOKEN not set, sign up at https://dashboard.ngrok.com/signup")
 	}
+
+	if _, isSet := os.LookupEnv("WEBHOOK_SECRET"); !isSet {
+		slog.Warn("environment variable WEBHOOK_SECRET not set")
+	}
+
 	var (
 		port    = *arguments.Port
 		host    = *arguments.Host

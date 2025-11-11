@@ -2,9 +2,15 @@ package podswap
 
 import (
 	"context"
+	"crypto"
+	"crypto/hmac"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"log/slog"
+	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"golang.ngrok.com/ngrok/v2"
@@ -19,16 +25,32 @@ func WebhookHandler(response http.ResponseWriter, request *http.Request) {
 		slog.Info("push webhook payload received, continuing")
 	case "":
 		slog.Info("x-github-event header not found, bad request")
-		response.WriteHeader(400)
+		response.WriteHeader(http.StatusBadRequest)
 		return
 	default:
 		slog.Info(fmt.Sprintf("returning due to unhandled webhook event: %v\n", event))
-		response.WriteHeader(200)
+		response.WriteHeader(http.StatusOK)
+		return
+	}
+
+	env, _ := os.LookupEnv("WEBHOOK_SECRET")
+	envHash := hmac.New(crypto.SHA256.New, []byte(env))
+	body, err := io.ReadAll(request.Body)
+	if err != nil {
+		slog.Error("failed to read body", slog.Any("error", err))
+		response.WriteHeader(http.StatusBadRequest)
+	}
+	envHash.Write(body)
+	expectedSignature := fmt.Sprintf("sha256=%s", hex.EncodeToString(envHash.Sum(nil)))
+	headerSignature := request.Header.Get("X-Hub-Signature-256")
+	if !hmac.Equal([]byte(expectedSignature), []byte(headerSignature)) {
+		slog.Error("webhook secret does not match", slog.String("headerSecret", headerSignature), slog.String("expectedSignature", expectedSignature))
+		response.WriteHeader(http.StatusForbidden)
 		return
 	}
 
 	// Tell github the payload was delivered successfully
-	response.WriteHeader(200)
+	response.WriteHeader(http.StatusOK)
 }
 
 func Start(ctx context.Context, ln net.Listener) error {
