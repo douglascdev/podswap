@@ -52,20 +52,20 @@ func TestParseArguments(t *testing.T) {
 			},
 		},
 		{
-			"Can set port and host",
+			"Can set build-cmd and deploy-cmd",
 			flag.NewFlagSet("", flag.PanicOnError),
-			[]string{"--port", "123", "--host", "abc"},
+			[]string{"--build-cmd", "podman compose build", "--deploy-cmd", "podman compose up -d"},
 			false,
 			nil,
 			func(a *podswap.Arguments) error {
-				var expectedPort uint = 123
-				if *a.Port != expectedPort {
-					return fmt.Errorf("expected port to be %d, got %d", expectedPort, a.Port)
+				expectedBuildCmd := "podman compose build"
+				if *a.BuildCommand != expectedBuildCmd {
+					return fmt.Errorf("expected build-cmd to be %s, got %s", expectedBuildCmd, *a.BuildCommand)
 				}
 
-				expectedHost := "abc"
-				if *a.Host != expectedHost {
-					return fmt.Errorf("expected host to be %q, got %q", expectedHost, *a.Host)
+				expectedDeployCmd := "podman compose up -d"
+				if *a.DeployCommand != expectedDeployCmd {
+					return fmt.Errorf("expected Deploy-cmd to be %s, got %s", expectedDeployCmd, *a.DeployCommand)
 				}
 				return nil
 			},

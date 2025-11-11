@@ -8,9 +8,9 @@ import (
 )
 
 type Arguments struct {
-	Port    *uint
-	Host    *string
-	WorkDir string
+	BuildCommand  *string
+	DeployCommand *string
+	WorkDir       string
 }
 
 func ParseArguments(flagset *flag.FlagSet, arguments []string) (result *Arguments, err error) {
@@ -42,8 +42,8 @@ func ParseArguments(flagset *flag.FlagSet, arguments []string) (result *Argument
 		return result, err
 	}
 
-	result.Port = flagset.Uint("port", 8888, "webhook listener port")
-	result.Host = flagset.String("host", "localhost", "webhook listener host")
+	result.BuildCommand = flagset.String("build-cmd", "docker compose build", "command to run after the webhook is triggered")
+	result.DeployCommand = flagset.String("deploy-cmd", "docker compose up -d", "command to run after the build command is done")
 	flagset.Func("workdir", "working directory where containers will be deployed from", setWorkDir)
 	flagset.Parse(arguments)
 

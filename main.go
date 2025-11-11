@@ -33,13 +33,13 @@ func main() {
 	}
 
 	var (
-		port    = *arguments.Port
-		host    = *arguments.Host
-		workdir = arguments.WorkDir
+		buildCmd  = *arguments.BuildCommand
+		deployCmd = *arguments.DeployCommand
+		workdir   = arguments.WorkDir
 	)
 
-	slog.Info(fmt.Sprintf("using port \"%d\"", port))
-	slog.Info(fmt.Sprintf("using host %q", host))
+	slog.Info(fmt.Sprintf("using buildCmd %q", buildCmd))
+	slog.Info(fmt.Sprintf("using deployCmd %q", deployCmd))
 	slog.Info(fmt.Sprintf("using workdir %q", workdir))
 
 	slog.Info("Press Ctrl+C to trigger a graceful shutdown.")
