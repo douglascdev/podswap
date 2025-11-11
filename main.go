@@ -4,10 +4,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	podswap "github.com/douglascdev/podswap/src"
 	"log/slog"
 	"os"
 	"os/signal"
-	podswap "podswap/src"
 	"syscall"
 )
 

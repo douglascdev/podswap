@@ -2,11 +2,11 @@ package podswap_test
 
 import (
 	"context"
+	podswap "github.com/douglascdev/podswap/src"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	podswap "podswap/src"
 	"strings"
 	"testing"
 	"time"

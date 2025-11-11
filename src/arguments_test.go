@@ -4,9 +4,9 @@ import (
 	"crypto/rand"
 	"flag"
 	"fmt"
+	podswap "github.com/douglascdev/podswap/src"
 	"os"
 	"path/filepath"
-	podswap "podswap/src"
 	"testing"
 )
 
