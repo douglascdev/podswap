@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	podswap "podswap/src"
+	"slices"
 	"testing"
 )
 
@@ -18,6 +19,23 @@ func TestParseArguments(t *testing.T) {
 	wd, err = filepath.Abs(wd)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	// add a made-up executable to path to later see if it's correctly detected
+	dir, err := os.MkdirTemp("", "glorp")
+	if err != nil {
+		t.Fatal(fmt.Errorf("failed to create temp dir: %w", err))
+	}
+	tempFile, err := os.OpenFile(filepath.Join(dir, "glorp"), os.O_CREATE|os.O_RDWR, 0765)
+	_, err = tempFile.Write([]byte("#!/bin/sh\necho 'Hello from glorp'"))
+	if err != nil {
+		t.Fatalf("failed to write to temp file: %v", err)
+	}
+	defer os.RemoveAll(tempFile.Name())
+	tempFile.Close()
+	err = os.Setenv("PATH", fmt.Sprintf("%s:%s", os.Getenv("PATH"), dir))
+	if err != nil {
+		t.Fatal(fmt.Errorf("failed to set $PATH: %w", err))
 	}
 
 	tests := []struct {
@@ -54,40 +72,54 @@ func TestParseArguments(t *testing.T) {
 		{
 			"Can set build-cmd and deploy-cmd",
 			flag.NewFlagSet("", flag.PanicOnError),
-			[]string{"--build-cmd", "podman compose build", "--deploy-cmd", "podman compose up -d"},
+			[]string{"--build-cmd", "glorp compose build", "--deploy-cmd", "glorp compose up -d"},
 			false,
 			nil,
 			func(a *podswap.Arguments) error {
-				expectedBuildCmd := "podman compose build"
-				if *a.BuildCommand != expectedBuildCmd {
-					return fmt.Errorf("expected build-cmd to be %s, got %s", expectedBuildCmd, *a.BuildCommand)
+				// build-cmd
+				if a.BuildCommand.Path != tempFile.Name() {
+					return fmt.Errorf("expected build-cmd path to be %s, got %s", tempFile.Name(), a.BuildCommand.Path)
+				}
+				expectedBuildArgs := []string{"compose", "build"}
+				got := a.BuildCommand.Args[1:]
+				if !slices.Equal(got, expectedBuildArgs) {
+					return fmt.Errorf("expected buildArgs to be %v, got %v", expectedBuildArgs, got)
 				}
 
-				expectedDeployCmd := "podman compose up -d"
-				if *a.DeployCommand != expectedDeployCmd {
-					return fmt.Errorf("expected Deploy-cmd to be %s, got %s", expectedDeployCmd, *a.DeployCommand)
+				// deploy-cmd
+				if a.DeployCommand.Path != tempFile.Name() {
+					return fmt.Errorf("expected deploy-cmd path to be %s, got %s", tempFile.Name(), a.DeployCommand.Path)
 				}
+				expectedDeployArgs := []string{"compose", "up", "-d"}
+				got = a.DeployCommand.Args[1:]
+				if !slices.Equal(got, expectedDeployArgs) {
+					return fmt.Errorf("expected deployArgs to be %v, got %v", expectedDeployArgs, got)
+				}
+
 				return nil
 			},
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			defer func() {
 				err := recover()
-				if err == nil && tt.wantPanic {
-					t.Errorf("expected panic for %q", tt.name)
+				if err == nil && test.wantPanic {
+					t.Errorf("expected panic for %q", test.name)
+				} else if err != nil && !test.wantPanic {
+					t.Errorf("unexpected panic for %q: %v", test.name, err)
 				}
 			}()
-			result, gotErr := podswap.ParseArguments(tt.flagset, tt.arguments)
 
-			if gotErr != tt.wantedErr {
-				t.Errorf("ParseArguments() failed: %v, expected error %v", gotErr, tt.wantedErr)
+			result, gotErr := podswap.ParseArguments(test.flagset, test.arguments)
+
+			if gotErr != test.wantedErr {
+				t.Errorf("ParseArguments() failed: %v, expected error %v", gotErr, test.wantedErr)
 			}
 
-			if tt.resultValidator != nil {
-				if err = tt.resultValidator(result); err != nil {
-					t.Errorf("Unexpected result for test %q: %v", tt.name, err)
+			if test.resultValidator != nil {
+				if err = test.resultValidator(result); err != nil {
+					t.Errorf("Unexpected result for test %q: %v", test.name, err)
 				}
 			}
 		})

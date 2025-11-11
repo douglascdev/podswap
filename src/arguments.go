@@ -1,21 +1,26 @@
 package podswap
 
 import (
+	"errors"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 type Arguments struct {
-	BuildCommand  *string
-	DeployCommand *string
+	BuildCommand  *exec.Cmd
+	DeployCommand *exec.Cmd
 	WorkDir       string
 }
 
 func ParseArguments(flagset *flag.FlagSet, arguments []string) (result *Arguments, err error) {
 	result = &Arguments{}
 
+	// workdir
 	setWorkDir := func(s string) error {
 		s, err = filepath.Abs(s)
 		if err != nil {
@@ -28,11 +33,11 @@ func ParseArguments(flagset *flag.FlagSet, arguments []string) (result *Argument
 		if !stat.IsDir() || s == "" {
 			return fmt.Errorf("workdir %q is not a directory", s)
 		}
+		slog.Debug("set workdir", slog.String("s", s))
 		result.WorkDir = s
 		return nil
 	}
 
-	// set default value for workdir as the current directory
 	wd, err := os.Getwd()
 	if err != nil {
 		return result, err
@@ -41,10 +46,50 @@ func ParseArguments(flagset *flag.FlagSet, arguments []string) (result *Argument
 	if err != nil {
 		return result, err
 	}
-
-	result.BuildCommand = flagset.String("build-cmd", "docker compose build", "command to run after the webhook is triggered")
-	result.DeployCommand = flagset.String("deploy-cmd", "docker compose up -d", "command to run after the build command is done")
 	flagset.Func("workdir", "working directory where containers will be deployed from", setWorkDir)
+
+	// build-cmd
+	flagset.Func("build-cmd", "command to run after the webhook is triggered", func(s string) error {
+		cmds := strings.Split(s, " ")
+		if len(cmds) < 1 {
+			return errors.New("build-cmd was not set")
+		}
+		var (
+			cmd     string = cmds[0]
+			cmdPath string
+			err     error
+		)
+		if cmdPath, err = exec.LookPath(cmd); err != nil {
+			return fmt.Errorf("command %q not found in path: %v", cmd, err)
+		}
+
+		result.BuildCommand = exec.Command(cmdPath, cmds[1:]...)
+		slog.Debug("set build-cmd", slog.String("cmdPath", cmdPath), slog.Any("args", cmds[1:]))
+
+		return nil
+	})
+
+	// deploy-cmd
+	flagset.Func("deploy-cmd", "command to run after the webhook is triggered", func(s string) error {
+		cmds := strings.Split(s, " ")
+		if len(cmds) < 1 {
+			return errors.New("deploy-cmd was not set")
+		}
+		var (
+			cmd     string = cmds[0]
+			cmdPath string
+			err     error
+		)
+		if cmdPath, err = exec.LookPath(cmd); err != nil {
+			return fmt.Errorf("command %q not found in path: %v", cmd, err)
+		}
+
+		result.DeployCommand = exec.Command(cmdPath, cmds[1:]...)
+		slog.Debug("set deploy-cmd", slog.String("cmdPath", cmdPath), slog.Any("args", cmds[1:]))
+
+		return nil
+	})
+
 	flagset.Parse(arguments)
 
 	return result, nil
