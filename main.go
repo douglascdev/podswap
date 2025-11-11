@@ -24,6 +24,9 @@ func main() {
 		return
 	}
 
+	if _, isSet := os.LookupEnv("NGROK_AUTHTOKEN"); !isSet {
+		slog.Warn("environment variable NGROK_AUTHTOKEN not set, sign up at https://dashboard.ngrok.com/signup")
+	}
 	var (
 		port    = *arguments.Port
 		host    = *arguments.Host
@@ -34,12 +37,12 @@ func main() {
 	slog.Info(fmt.Sprintf("using host %q", host))
 	slog.Info(fmt.Sprintf("using workdir %q", workdir))
 
-	fmt.Println("Press Ctrl+C to trigger a graceful shutdown.")
+	slog.Info("Press Ctrl+C to trigger a graceful shutdown.")
 
-	err = podswap.Start(ctx, arguments)
+	err = podswap.Start(ctx, nil)
 	if err != nil {
 		slog.Error(fmt.Sprintf("server err: %v", err))
 	}
 	<-ctx.Done()
-	fmt.Println("Main routine exiting. All workers have been notified.")
+	slog.Info("main routine exiting.")
 }

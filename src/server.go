@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"golang.ngrok.com/ngrok/v2"
 )
 
 func WebhookHandler(response http.ResponseWriter, request *http.Request) {
@@ -29,15 +31,28 @@ func WebhookHandler(response http.ResponseWriter, request *http.Request) {
 	response.WriteHeader(200)
 }
 
-func Start(ctx context.Context, arguments *Arguments) error {
-	server := &http.Server{Addr: fmt.Sprintf("%s:%d", *arguments.Host, *arguments.Port)}
-	http.HandleFunc("/webhook", WebhookHandler)
+func Start(ctx context.Context, ln net.Listener) error {
+	var (
+		err error
+		url string
+	)
+	if ln == nil {
+		ln, err = ngrok.Listen(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to start ngrok listener: %v", err)
+		}
+		url = fmt.Sprintf("https://%s", ln.Addr().String())
+	} else {
+		url = ln.Addr().String()
+	}
+
+	slog.Info("ngrok listener started", slog.String("url", url))
 
 	var serveErrCh chan error
 	go func() {
 		slog.Info("started server")
-		err := server.ListenAndServe()
-		slog.Info("stopped the server")
+		err := http.Serve(ln, http.HandlerFunc(WebhookHandler))
+		slog.Info("stopped server")
 		serveErrCh <- err
 	}()
 
@@ -48,12 +63,21 @@ func Start(ctx context.Context, arguments *Arguments) error {
 			return err
 		case <-ctx.Done():
 			slog.Info("context is done, stopping the server")
-			ctx, cancel := context.WithTimeout(ctx, time.Second*5)
+			ctxTimeout, cancel := context.WithTimeout(context.Background(), time.Second*5)
 			defer cancel()
 
-			if err := server.Shutdown(ctx); err != nil {
-				slog.Error(fmt.Sprintf("error trying to shut down server: %v\n", err))
-				return err
+			closedWithErr := make(chan error)
+			go func() {
+				closedWithErr <- ln.Close()
+			}()
+
+			select {
+			case err = <-closedWithErr:
+				if err != nil {
+					slog.Error(fmt.Sprintf("error trying to shut down server: %v\n", err))
+				}
+			case <-ctxTimeout.Done():
+				slog.Error("server connection refused to close gracefully, ending anyway")
 			}
 
 			return nil
