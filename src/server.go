@@ -11,12 +11,29 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"time"
 
 	"golang.ngrok.com/ngrok/v2"
 )
 
-func WebhookHandler(response http.ResponseWriter, request *http.Request) {
+type WebhookServer struct {
+	buildCmd   string
+	deployCmd  string
+	workdir    string
+	podswapReq chan bool
+}
+
+func NewServer(buildCmd string, deployCmd string, workdir string) *WebhookServer {
+	return &WebhookServer{
+		buildCmd:   buildCmd,
+		deployCmd:  deployCmd,
+		workdir:    workdir,
+		podswapReq: make(chan bool, 50),
+	}
+}
+
+func (s *WebhookServer) WebhookHandler(response http.ResponseWriter, request *http.Request) {
 	slog.Info("received webhook payload")
 
 	event := request.Header.Get("x-github-event")
@@ -48,12 +65,48 @@ func WebhookHandler(response http.ResponseWriter, request *http.Request) {
 		response.WriteHeader(http.StatusForbidden)
 		return
 	}
+	slog.Info("webhook triggered successfully, forwarding podswap request")
+	s.podswapReq <- true
 
 	// Tell github the payload was delivered successfully
 	response.WriteHeader(http.StatusOK)
 }
 
-func Start(ctx context.Context, ln net.Listener) error {
+func (s *WebhookServer) commandRunner(ctx context.Context) {
+	slog.Info("command runner is waiting")
+
+	for {
+		select {
+		case <-ctx.Done():
+			slog.Info("command runner stopped")
+			return
+		case <-s.podswapReq:
+			slog.Info("command runner received a podswap request")
+			// TODO: command argument for timeout duration
+			buildTimeoutCtx, buildCancel := context.WithTimeout(ctx, time.Second*500)
+			defer buildCancel()
+			buildCmd := exec.CommandContext(buildTimeoutCtx, s.buildCmd)
+			buildCmd.Dir = s.workdir
+			err := buildCmd.Run()
+			if err != nil {
+				slog.Error("failed to run buildCmd", slog.Any("err", err))
+				continue
+			}
+
+			deployTimeoutCtx, deployCancel := context.WithTimeout(ctx, time.Second*500)
+			defer deployCancel()
+			deployCmd := exec.CommandContext(deployTimeoutCtx, s.deployCmd)
+			deployCmd.Dir = s.workdir
+			err = deployCmd.Run()
+			if err != nil {
+				slog.Error("failed to run deployCmd", slog.Any("err", err))
+				continue
+			}
+		}
+	}
+}
+
+func (s *WebhookServer) Start(ctx context.Context, ln net.Listener) error {
 	var (
 		err error
 		url string
@@ -73,10 +126,12 @@ func Start(ctx context.Context, ln net.Listener) error {
 	var serveErrCh chan error
 	go func() {
 		slog.Info("started server")
-		err := http.Serve(ln, http.HandlerFunc(WebhookHandler))
+		err := http.Serve(ln, http.HandlerFunc(s.WebhookHandler))
 		slog.Info("stopped server")
 		serveErrCh <- err
 	}()
+
+	go s.commandRunner(ctx)
 
 	for {
 		var err error

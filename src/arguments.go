@@ -12,8 +12,8 @@ import (
 )
 
 type Arguments struct {
-	BuildCommand  *exec.Cmd
-	DeployCommand *exec.Cmd
+	BuildCommand  *string
+	DeployCommand *string
 	WorkDir       string
 }
 
@@ -43,16 +43,15 @@ func ParseArguments(flagset *flag.FlagSet, arguments []string) (result *Argument
 			return errors.New("build-cmd was not set")
 		}
 		var (
-			cmd     string = cmds[0]
-			cmdPath string
-			err     error
+			cmd string = cmds[0]
+			err error
 		)
-		if cmdPath, err = exec.LookPath(cmd); err != nil {
+		if _, err = exec.LookPath(cmd); err != nil {
 			return fmt.Errorf("command %q not found in path: %v", cmd, err)
 		}
 
-		result.BuildCommand = exec.Command(cmdPath, cmds[1:]...)
-		slog.Debug("set build-cmd", slog.String("cmdPath", cmdPath), slog.Any("args", cmds[1:]))
+		result.BuildCommand = &s
+		slog.Debug("set build-cmd", slog.String("command", s))
 
 		return nil
 	}
@@ -63,16 +62,15 @@ func ParseArguments(flagset *flag.FlagSet, arguments []string) (result *Argument
 			return errors.New("deploy-cmd was not set")
 		}
 		var (
-			cmd     string = cmds[0]
-			cmdPath string
-			err     error
+			cmd string = cmds[0]
+			err error
 		)
-		if cmdPath, err = exec.LookPath(cmd); err != nil {
+		if _, err = exec.LookPath(cmd); err != nil {
 			return fmt.Errorf("command %q not found in path: %v", cmd, err)
 		}
 
-		result.DeployCommand = exec.Command(cmdPath, cmds[1:]...)
-		slog.Debug("set deploy-cmd", slog.String("cmdPath", cmdPath), slog.Any("args", cmds[1:]))
+		result.DeployCommand = &s
+		slog.Debug("set deploy-cmd", slog.String("command", s))
 
 		return nil
 	}

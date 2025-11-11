@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	podswap "podswap/src"
-	"slices"
 	"testing"
 )
 
@@ -90,23 +89,14 @@ func TestParseArguments(t *testing.T) {
 			nil,
 			func(a *podswap.Arguments) error {
 				// build-cmd
-				if a.BuildCommand.Path != glorpTempFile.Name() {
-					return fmt.Errorf("expected build-cmd path to be %s, got %s", glorpTempFile.Name(), a.BuildCommand.Path)
-				}
-				expectedBuildArgs := []string{"compose", "build"}
-				got := a.BuildCommand.Args[1:]
-				if !slices.Equal(got, expectedBuildArgs) {
-					return fmt.Errorf("expected buildArgs to be %v, got %v", expectedBuildArgs, got)
+				expected := "glorp compose build"
+				if *a.BuildCommand != expected {
+					return fmt.Errorf("expected build-cmd path to be %s, got %s", expected, *a.BuildCommand)
 				}
 
-				// deploy-cmd
-				if a.DeployCommand.Path != glorpTempFile.Name() {
-					return fmt.Errorf("expected deploy-cmd path to be %s, got %s", glorpTempFile.Name(), a.DeployCommand.Path)
-				}
-				expectedDeployArgs := []string{"compose", "up", "-d"}
-				got = a.DeployCommand.Args[1:]
-				if !slices.Equal(got, expectedDeployArgs) {
-					return fmt.Errorf("expected deployArgs to be %v, got %v", expectedDeployArgs, got)
+				expected = "glorp compose up -d"
+				if *a.DeployCommand != expected {
+					return fmt.Errorf("expected deploy-cmd path to be %s, got %s", expected, *a.DeployCommand)
 				}
 
 				return nil
@@ -120,23 +110,14 @@ func TestParseArguments(t *testing.T) {
 			nil,
 			func(a *podswap.Arguments) error {
 				// build-cmd
-				if a.BuildCommand.Path != glorpTempFile.Name() {
-					return fmt.Errorf("expected build-cmd path to be %s, got %s", glorpTempFile.Name(), a.BuildCommand.Path)
-				}
-				expectedBuildArgs := []string{"compose", "build"}
-				got := a.BuildCommand.Args[1:]
-				if !slices.Equal(got, expectedBuildArgs) {
-					return fmt.Errorf("expected buildArgs to be %v, got %v", expectedBuildArgs, got)
+				expected := "docker compose build"
+				if *a.BuildCommand != expected {
+					return fmt.Errorf("expected build-cmd path to be %s, got %s", expected, *a.BuildCommand)
 				}
 
-				// deploy-cmd
-				if a.DeployCommand.Path != glorpTempFile.Name() {
-					return fmt.Errorf("expected deploy-cmd path to be %s, got %s", glorpTempFile.Name(), a.DeployCommand.Path)
-				}
-				expectedDeployArgs := []string{"compose", "up", "-d"}
-				got = a.DeployCommand.Args[1:]
-				if !slices.Equal(got, expectedDeployArgs) {
-					return fmt.Errorf("expected deployArgs to be %v, got %v", expectedDeployArgs, got)
+				expected = "docker compose up -d --force-recreate"
+				if *a.DeployCommand != expected {
+					return fmt.Errorf("expected deploy-cmd path to be %s, got %s", expected, *a.DeployCommand)
 				}
 
 				return nil

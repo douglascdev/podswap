@@ -38,13 +38,14 @@ func main() {
 		workdir   = arguments.WorkDir
 	)
 
-	slog.Info(fmt.Sprintf("using build-cmd %q", buildCmd.Args))
-	slog.Info(fmt.Sprintf("using deploy-cmd %q", deployCmd.Args))
+	slog.Info(fmt.Sprintf("using build-cmd %q", *buildCmd))
+	slog.Info(fmt.Sprintf("using deploy-cmd %q", *deployCmd))
 	slog.Info(fmt.Sprintf("using workdir %q", workdir))
 
 	slog.Info("Press Ctrl+C to trigger a graceful shutdown.")
 
-	err = podswap.Start(ctx, nil)
+	server := podswap.NewServer(*buildCmd, *deployCmd, workdir)
+	err = server.Start(ctx, nil)
 	if err != nil {
 		slog.Error(fmt.Sprintf("server err: %v", err))
 	}

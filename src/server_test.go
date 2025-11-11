@@ -2,7 +2,6 @@ package podswap_test
 
 import (
 	"context"
-	"flag"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -28,15 +27,12 @@ func TestStart(t *testing.T) {
 				cancel()
 			}()
 
-			_, err := podswap.ParseArguments(flag.NewFlagSet("", flag.PanicOnError), []string{})
-			if err != nil {
-				t.Fatal(err)
-			}
 			listener, err := net.Listen("tcp", ":8888")
 			if err != nil {
 				t.Fatalf("failed to open listener: %v", err)
 			}
-			gotErr := podswap.Start(ctx, listener)
+			sv := podswap.NewServer("echo a", "echo a", ".")
+			gotErr := sv.Start(ctx, listener)
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("Start() failed: %v", gotErr)
@@ -53,6 +49,8 @@ func TestStart(t *testing.T) {
 func TestWebhookHandler(t *testing.T) {
 	validRequest := httptest.NewRequest("POST", "/", strings.NewReader("Hello, World!"))
 	validRequest.Header.Set("X-Hub-Signature-256", "sha256=757107ea0eb2509fc211221cce984b8a37570b6d7586c22c46f4379c8b043e17")
+
+	sv := podswap.NewServer("echo a", "echo a", ".")
 
 	tests := []struct {
 		name string // description of this test case
@@ -100,7 +98,7 @@ func TestWebhookHandler(t *testing.T) {
 	for _, test := range tests {
 		test.request.Header.Set("x-github-event", test.githubEvent)
 		os.Setenv("WEBHOOK_SECRET", test.webhookSecret)
-		podswap.WebhookHandler(test.response, test.request)
+		sv.WebhookHandler(test.response, test.request)
 		response := test.response.(*httptest.ResponseRecorder)
 		if response.Code != test.expectedCode {
 			t.Errorf("request with %q event should return %d, got %d", test.name, test.expectedCode, response.Code)
