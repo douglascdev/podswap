@@ -1,6 +1,6 @@
 # podswap
 
-PodsSwap is a lightweight application designed to update your containers with almost no downtime. By listening for the `push` event in your GitHub repository, PodsSwap re-builds and swaps your containers seamlessly.
+PodSwap is a lightweight application designed to update your containers with almost no downtime. By listening for the `push` event in your GitHub repository, PodSwap re-builds and swaps your containers seamlessly.
 
 This project is in its early stages, and we welcome feedback from users to help improve its functionality. 
 
