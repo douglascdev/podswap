@@ -47,3 +47,30 @@ Step-by-step setup:
 ```bash
 NGROK_AUTHTOKEN=YOUR_TOKEN WEBHOOK_SECRET=YOUR_SECRET podswap -build-cmd "podman compose build" -deploy-cmd "podman compose up -d --force-recreate"
 ```
+
+## Running with systemd
+
+Replace the `<>` fields with your config and add it to `~/.config/systemd/user/podswap.service`:
+
+```bash
+[Unit]
+Description=podswap
+After=network-online.target
+
+[Service]
+ExecStart=/home/<YOUR USER>/go/bin/podswap -build-cmd "podman compose build" -deploy-cmd "podman compose up -d --force-recreate" --workdir /home/<YOUR USER>/<YOUR PROJECT FOLDER>
+Environment="NGROK_AUTHTOKEN=<YOUR TOKEN>"
+Environment="WEBHOOK_SECRET=<YOUR SECRET>"
+Restart=on-failure
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
+```
+
+Start/enable the service:
+
+```bash
+systemctl --user --now enable podswap
+```
