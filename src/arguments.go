@@ -12,9 +12,10 @@ import (
 )
 
 type Arguments struct {
-	BuildCommand  *string
-	DeployCommand *string
-	WorkDir       string
+	PreBuildCommand *string
+	BuildCommand    *string
+	DeployCommand   *string
+	WorkDir         string
 }
 
 func ParseArguments(flagset *flag.FlagSet, arguments []string) (result *Arguments, err error) {
@@ -74,12 +75,34 @@ func ParseArguments(flagset *flag.FlagSet, arguments []string) (result *Argument
 
 		return nil
 	}
+
+	setPreBuildCmd := func(s string) error {
+		cmds := strings.Split(s, " ")
+		if len(cmds) < 1 {
+			return errors.New("pre-build-cmd was not set")
+		}
+		var (
+			cmd string = cmds[0]
+			err error
+		)
+		if _, err = exec.LookPath(cmd); err != nil {
+			return fmt.Errorf("command %q not found in path: %v", cmd, err)
+		}
+
+		result.PreBuildCommand = &s
+		slog.Debug("set pre-build-cmd", slog.String("command", s))
+
+		return nil
+	}
+
 	defaultExecutable := "docker"
+	defaultPreBuild := "git pull"
 	defaultBuild := fmt.Sprintf("%s compose build", defaultExecutable)
 	defaultDeploy := fmt.Sprintf("%s compose up -d --force-recreate", defaultExecutable)
 
 	flagset.Func("workdir", "working directory where containers will be deployed from(default: current directory).", setWorkDir)
-	flagset.Func("build-cmd", fmt.Sprintf("command to run after the webhook is triggered(default: %q).", defaultBuild), setBuildCmd)
+	flagset.Func("pre-build-cmd", fmt.Sprintf("command to run after the webhook is triggered(default: %q).", defaultPreBuild), setPreBuildCmd)
+	flagset.Func("build-cmd", fmt.Sprintf("command to run after the pre-build command(default: %q).", defaultBuild), setBuildCmd)
 	flagset.Func("deploy-cmd", fmt.Sprintf("command to run after the build is finished(default: %q).", defaultDeploy), setDeployCmd)
 
 	flagset.Parse(arguments)
@@ -109,6 +132,14 @@ func ParseArguments(flagset *flag.FlagSet, arguments []string) (result *Argument
 		err = setDeployCmd(defaultDeploy)
 		if err != nil {
 			return result, fmt.Errorf("default executable %q for argument deploy-cmd not found, please set deploy-cmd yourself.", defaultExecutable)
+		}
+	}
+
+	// pre-build-cmd default
+	if result.PreBuildCommand == nil {
+		err = setPreBuildCmd(defaultPreBuild)
+		if err != nil {
+			return result, fmt.Errorf("default executable %q for argument pre-build-cmd not found, please set pre-build-cmd yourself.", "git")
 		}
 	}
 

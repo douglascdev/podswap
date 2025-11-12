@@ -19,18 +19,20 @@ import (
 )
 
 type WebhookServer struct {
-	buildCmd   string
-	deployCmd  string
-	workdir    string
-	podswapReq chan bool
+	buildCmd    string
+	deployCmd   string
+	workdir     string
+	preBuildCmd string
+	podswapReq  chan bool
 }
 
-func NewServer(buildCmd string, deployCmd string, workdir string) *WebhookServer {
+func NewServer(preBuildCmd string, buildCmd string, deployCmd string, workdir string) *WebhookServer {
 	return &WebhookServer{
-		buildCmd:   buildCmd,
-		deployCmd:  deployCmd,
-		workdir:    workdir,
-		podswapReq: make(chan bool, 50),
+		preBuildCmd: preBuildCmd,
+		buildCmd:    buildCmd,
+		deployCmd:   deployCmd,
+		workdir:     workdir,
+		podswapReq:  make(chan bool, 50),
 	}
 }
 
@@ -74,7 +76,29 @@ func (s *WebhookServer) WebhookHandler(response http.ResponseWriter, request *ht
 }
 
 func (s *WebhookServer) commandRunner(ctx context.Context) {
-	slog.Info("command runner is waiting")
+	slog.Info("command runner is active")
+
+	runPodswapReq := func(timeout time.Duration, cmdStr string) (cmdOutput string, err error) {
+		cmdTimeoutCtx, buildCancel := context.WithTimeout(ctx, timeout)
+		defer buildCancel()
+		var cmd *exec.Cmd
+		args := strings.Split(cmdStr, " ")
+		switch len(args) {
+		case 0:
+			return "", fmt.Errorf("failed to run podswap request, command %s is empty", cmd)
+		case 1:
+			cmd = exec.CommandContext(cmdTimeoutCtx, args[0])
+		default:
+			cmd = exec.CommandContext(cmdTimeoutCtx, args[0], args[1:]...)
+		}
+		cmd.Dir = s.workdir
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return string(out), fmt.Errorf("failed to run buildCmd: %w", err)
+		}
+
+		return string(out), nil
+	}
 
 	for {
 		select {
@@ -84,45 +108,28 @@ func (s *WebhookServer) commandRunner(ctx context.Context) {
 		case <-s.podswapReq:
 			slog.Info("command runner received a podswap request")
 			// TODO: command argument for timeout duration
-			buildTimeoutCtx, buildCancel := context.WithTimeout(ctx, time.Second*500)
-			defer buildCancel()
-			var buildCmd *exec.Cmd
-			args := strings.Split(s.buildCmd, " ")
-			switch len(args) {
-			case 0:
-				slog.Error("failed to run podswap request, buildCmd is empty")
-				continue
-			case 1:
-				buildCmd = exec.CommandContext(buildTimeoutCtx, args[0])
-			default:
-				buildCmd = exec.CommandContext(buildTimeoutCtx, args[0], args[1:]...)
-			}
-			buildCmd.Dir = s.workdir
-			out, err := buildCmd.CombinedOutput()
-			if err != nil {
-				slog.Error("failed to run buildCmd", slog.Any("err", err), slog.Any("result", out))
-				continue
-			}
+			timeout := time.Second * 500
 
-			deployTimeoutCtx, deployCancel := context.WithTimeout(ctx, time.Second*500)
-			defer deployCancel()
-			var deployCmd *exec.Cmd
-			args = strings.Split(s.deployCmd, " ")
-			switch len(args) {
-			case 0:
-				slog.Error("failed to run podswap request, deployCmd is empty")
-				continue
-			case 1:
-				deployCmd = exec.CommandContext(deployTimeoutCtx, args[0])
-			default:
-				deployCmd = exec.CommandContext(deployTimeoutCtx, args[0], args[1:]...)
-			}
-			deployCmd.Dir = s.workdir
-			out, err = deployCmd.CombinedOutput()
+			out, err := runPodswapReq(timeout, s.preBuildCmd)
 			if err != nil {
-				slog.Error("failed to run deployCmd", slog.Any("err", err), slog.Any("result", out))
+				slog.Error("pre-build command failed", slog.Any("err", err), slog.Any("output", out))
 				continue
 			}
+			slog.Info("pre-build command succeeded", slog.Any("output", out))
+
+			out, err = runPodswapReq(timeout, s.buildCmd)
+			if err != nil {
+				slog.Error("build command failed", slog.Any("err", err), slog.Any("output", out))
+				continue
+			}
+			slog.Info("build command succeeded", slog.Any("output", out))
+
+			out, err = runPodswapReq(timeout, s.deployCmd)
+			if err != nil {
+				slog.Error("deploy command failed", slog.Any("err", err), slog.Any("output", out))
+				continue
+			}
+			slog.Info("deploy command succeeded", slog.Any("output", out))
 		}
 	}
 }

@@ -82,9 +82,9 @@ func TestParseArguments(t *testing.T) {
 			},
 		},
 		{
-			"Can set build-cmd and deploy-cmd",
+			"Can set pre-build-cmd, build-cmd and deploy-cmd",
 			flag.NewFlagSet("", flag.PanicOnError),
-			[]string{"--build-cmd", "glorp compose build", "--deploy-cmd", "glorp compose up -d"},
+			[]string{"--pre-build-cmd", "git pull", "--build-cmd", "glorp compose build", "--deploy-cmd", "glorp compose up -d"},
 			false,
 			nil,
 			func(a *podswap.Arguments) error {
@@ -99,11 +99,16 @@ func TestParseArguments(t *testing.T) {
 					return fmt.Errorf("expected deploy-cmd path to be %s, got %s", expected, *a.DeployCommand)
 				}
 
+				expected = "git pull"
+				if *a.PreBuildCommand != expected {
+					return fmt.Errorf("expected pre-build-cmd path to be %s, got %s", expected, *a.PreBuildCommand)
+				}
+
 				return nil
 			},
 		},
 		{
-			"Check if it runs with default build-cmd and deploy-cmd",
+			"Check if it runs with default pre-build-cmd, build-cmd and deploy-cmd",
 			flag.NewFlagSet("", flag.PanicOnError),
 			[]string{},
 			false,
@@ -118,6 +123,11 @@ func TestParseArguments(t *testing.T) {
 				expected = "docker compose up -d --force-recreate"
 				if *a.DeployCommand != expected {
 					return fmt.Errorf("expected deploy-cmd path to be %s, got %s", expected, *a.DeployCommand)
+				}
+
+				expected = "git pull"
+				if *a.PreBuildCommand != expected {
+					return fmt.Errorf("expected pre-build-cmd path to be %s, got %s", expected, *a.PreBuildCommand)
 				}
 
 				return nil

@@ -2,7 +2,6 @@ package podswap_test
 
 import (
 	"context"
-	podswap "github.com/douglascdev/podswap/src"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	podswap "github.com/douglascdev/podswap/src"
 )
 
 func TestStart(t *testing.T) {
@@ -31,7 +32,7 @@ func TestStart(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to open listener: %v", err)
 			}
-			sv := podswap.NewServer("echo a", "echo a", ".")
+			sv := podswap.NewServer("echo a", "echo a", "echo a", ".")
 			gotErr := sv.Start(ctx, listener)
 			if gotErr != nil {
 				if !tt.wantErr {
@@ -50,7 +51,7 @@ func TestWebhookHandler(t *testing.T) {
 	validRequest := httptest.NewRequest("POST", "/", strings.NewReader("Hello, World!"))
 	validRequest.Header.Set("X-Hub-Signature-256", "sha256=757107ea0eb2509fc211221cce984b8a37570b6d7586c22c46f4379c8b043e17")
 
-	sv := podswap.NewServer("echo a", "echo a", ".")
+	sv := podswap.NewServer("echo a", "echo a", "echo a", ".")
 
 	tests := []struct {
 		name string // description of this test case

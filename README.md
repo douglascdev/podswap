@@ -23,8 +23,10 @@ export PATH=$PATH:$HOME/go/bin
 
 ```bash
 Usage of podswap:
+  -pre-build-cmd value
+    	command to run after the webhook is triggered(default: "git pull").
   -build-cmd value
-    	command to run after the webhook is triggered(default: "docker compose build").
+    	command to run after the pre-build command(default: "docker compose build").
   -deploy-cmd value
     	command to run after the build is finished(default: "docker compose up -d --force-recreate").
   -workdir value
