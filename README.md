@@ -74,3 +74,9 @@ Start/enable the service:
 ```bash
 systemctl --user --now enable podswap
 ```
+
+To see the logs in real time:
+
+```bash
+journalctl --user -f -u podswap.service
+```
