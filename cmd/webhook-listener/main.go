@@ -4,18 +4,19 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	podswap "github.com/douglascdev/podswap/src"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
+
+	podswap "github.com/douglascdev/podswap/src"
 )
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 
-	flagset := flag.NewFlagSet("podswap", flag.ExitOnError)
+	flagset := flag.NewFlagSet("webhook-listener", flag.ExitOnError)
 	flagset.SetOutput(os.Stdout)
 	arguments, err := podswap.ParseArguments(flagset, os.Args[1:])
 	if err != nil {
