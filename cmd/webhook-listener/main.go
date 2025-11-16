@@ -16,7 +16,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 
-	flagset := flag.NewFlagSet("webhook-listener", flag.ExitOnError)
+	flagset := flag.NewFlagSet("podswap-listener", flag.ExitOnError)
 	flagset.SetOutput(os.Stdout)
 	arguments, err := podswap.ParseArguments(flagset, os.Args[1:])
 	if err != nil {
