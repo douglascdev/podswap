@@ -2,7 +2,10 @@ module github.com/douglascdev/podswap
 
 go 1.24.9
 
-require golang.ngrok.com/ngrok/v2 v2.1.0
+require (
+	github.com/goccy/go-yaml v1.18.0
+	golang.ngrok.com/ngrok/v2 v2.1.0
+)
 
 require (
 	github.com/jpillora/backoff v1.0.0 // indirect
