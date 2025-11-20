@@ -30,3 +30,4 @@ runs:
       run: python3 send_push.py
       env:
         WEBHOOK_SECRET: ${{ secrets.WebhookSecret }}
+        WEBHOOK_URL: ${{ secrets.WebhookUrl }}
