@@ -34,6 +34,8 @@ Step-by-step setup:
 - Create a `.github/workflows/podswap.yml` file with the contents:
 
 ```yml
+name: podswap
+
 on:
   push:
     branches:
@@ -41,7 +43,7 @@ on:
 
 jobs:
   podswap:
-    uses: douglascdev/podswap@main
+    uses: douglascdev/podswap/action.yml
     with:
       pre-build-cmd: 'git pull'
       build-cmd: 'podman compose build'
@@ -73,7 +75,7 @@ Description=podswap
 After=network-online.target
 
 [Service]
-ExecStart=/home/<YOUR USER>/go/bin/podswap -build-cmd "podman compose build" -deploy-cmd "podman compose up -d --force-recreate" --workdir /home/<YOUR USER>/<YOUR PROJECT FOLDER>
+ExecStart=/home/<YOUR USER>/go/bin/podswap
 Environment="NGROK_AUTHTOKEN=<YOUR TOKEN>"
 Environment="WEBHOOK_SECRET=<YOUR SECRET>"
 Restart=on-failure
