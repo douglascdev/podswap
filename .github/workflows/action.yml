@@ -2,6 +2,20 @@ name: 'podswap push'
 description: 'Send a push request to a podswap webhook listener'
 on:
   workflow_call:
+    # Not used in the action itself. It's read from the user's action by podswap.
+    inputs:
+      pre-build-cmd:
+        description: 'Pre-build command'
+        required: false
+        default: 'git pull'
+      build-cmd:
+        description: 'Build command'
+        required: false
+        default: 'docker compose build'
+      deploy-cmd:
+        description: 'Deploy command'
+        required: false
+        default: 'docker compose up -d --force-recreate'
 jobs:
   send-push:
     runs-on: "ubuntu-24.04"
