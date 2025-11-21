@@ -6,14 +6,17 @@ on:
     inputs:
       pre-build-cmd:
         description: 'Pre-build command'
+        type: string
         required: false
         default: 'git pull'
       build-cmd:
         description: 'Build command'
+        type: string
         required: false
         default: 'docker compose build'
       deploy-cmd:
         description: 'Deploy command'
+        type: string
         required: false
         default: 'docker compose up -d --force-recreate'
 jobs:
