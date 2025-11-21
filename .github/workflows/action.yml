@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Install Python push script dependencies
-        run: apt-get install -y python3 python3-requests
+        run: sudo apt-get install -y python3 python3-requests
 
       - name: Send push
         shell: bash
