@@ -60,7 +60,7 @@ jobs:
 - Run the listener on your server:
 
 ```bash
-NGROK_AUTHTOKEN=YOUR_TOKEN WEBHOOK_SECRET=YOUR_SECRET podswap -a YOUR_PROJECT_DIR -f PATH_TO_WORKFLOW_FILE
+NGROK_AUTHTOKEN=YOUR_TOKEN WEBHOOK_SECRET=YOUR_SECRET podswap -f YOUR_PROJECT_DIR -a PATH_TO_ACTION_FILE
 ```
 
 When a push is done on main, the listener will run the commands specified on the action file.
@@ -75,7 +75,7 @@ Description=podswap
 After=network-online.target
 
 [Service]
-ExecStart=/home/<YOUR USER>/go/bin/podswap
+ExecStart=/home/<YOUR USER>/go/bin/podswap -f PROJECT_DIR -a PROJECT_DIR/.github/workflows/podswap/yml
 Environment="NGROK_AUTHTOKEN=<YOUR TOKEN>"
 Environment="WEBHOOK_SECRET=<YOUR SECRET>"
 Restart=on-failure
