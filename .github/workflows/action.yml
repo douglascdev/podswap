@@ -20,9 +20,9 @@ on:
         required: false
         default: 'docker compose up -d --force-recreate'
     secrets:
-      secret:
+      WEBHOOK_SECRET:
         required: true
-      url:
+      WEBHOOK_URL:
         required: true
 jobs:
   send-push:
@@ -40,5 +40,5 @@ jobs:
         shell: bash
         run: python3 send_push.py
         env:
-          WEBHOOK_SECRET: ${{ secrets.secret }}
-          WEBHOOK_URL: ${{ secrets.url }}
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
