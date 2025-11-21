@@ -1,6 +1,7 @@
 name: 'podswap push'
 description: 'Send a push request to a podswap webhook listener'
-
+on:
+  workflow_call:
 runs:
   using: "ubuntu-24.04"
   steps:
