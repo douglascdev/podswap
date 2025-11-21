@@ -64,7 +64,9 @@ NGROK_AUTHTOKEN=YOUR_TOKEN WEBHOOK_SECRET=YOUR_SECRET podswap -p YOUR_PROJECT_DI
 
 When a push is done on main, the listener will run the commands specified on the action file.
 
-Be aware of the implication here: `podswap` assumes the commands on your repository are safe and were written by you.
+The push requests are authenticated by checking a hash in the request's header that must be generated with your secret. Then it reads the commands from your repo's action file and executes them.
+
+Be aware of the security implication here: `podswap` assumes the commands in your repository are safe and were written by you.
 
 ## Running with systemd
 
