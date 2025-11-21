@@ -1,26 +1,10 @@
 name: 'podswap push'
 description: 'Send a push request to a podswap webhook listener'
 
-# Not used in the action itself. It's read from the user's action by podswap.
-inputs:
-  pre-build-cmd:
-    description: 'Pre-build command'
-    required: false
-    default: 'git pull'
-  build-cmd:
-    description: 'Build command'
-    required: false
-    default: 'docker compose build'
-  deploy-cmd:
-    description: 'Deploy command'
-    required: false
-    default: 'docker compose up -d --force-recreate'
-
 runs:
   using: "ubuntu-24.04"
   steps:
-    - name: Checkout
-      uses: actions/checkout@v5
+    - uses: actions/checkout@v5
 
     - name: Install Python push script dependencies
       run: apt-get install -y python3 python3-requests
