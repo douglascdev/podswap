@@ -16,7 +16,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 
-	flagset := flag.NewFlagSet("podswap-listener", flag.ExitOnError)
+	flagset := flag.NewFlagSet("podswap", flag.ExitOnError)
 	flagset.SetOutput(os.Stdout)
 	arguments, err := podswap.ParseArguments(flagset, os.Args[1:])
 	if err != nil {
@@ -33,21 +33,15 @@ func main() {
 		slog.Warn("environment variable WEBHOOK_SECRET not set")
 	}
 
-	var (
-		preBuildCmd = arguments.PreBuildCommand
-		buildCmd    = arguments.BuildCommand
-		deployCmd   = arguments.DeployCommand
-		workdir     = arguments.WorkDir
-	)
-
-	slog.Info(fmt.Sprintf("using pre-build-cmd %q", *preBuildCmd))
-	slog.Info(fmt.Sprintf("using build-cmd %q", *buildCmd))
-	slog.Info(fmt.Sprintf("using deploy-cmd %q", *deployCmd))
-	slog.Info(fmt.Sprintf("using workdir %q", workdir))
+	server, err := podswap.NewServer(arguments)
+	if err != nil {
+		slog.Error("failed to create new server", slog.Any("err", err))
+		os.Exit(1)
+	}
+	server.PrintData()
 
 	slog.Info("Press Ctrl+C to trigger a graceful shutdown.")
 
-	server := podswap.NewServer(*preBuildCmd, *buildCmd, *deployCmd, workdir)
 	err = server.Start(ctx, nil)
 	if err != nil {
 		slog.Error(fmt.Sprintf("server err: %v", err))

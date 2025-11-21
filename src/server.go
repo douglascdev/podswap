@@ -19,21 +19,29 @@ import (
 )
 
 type WebhookServer struct {
-	buildCmd    string
-	deployCmd   string
-	workdir     string
-	preBuildCmd string
-	podswapReq  chan bool
+	Config     *Config
+	arguments  *Arguments
+	podswapReq chan bool
 }
 
-func NewServer(preBuildCmd string, buildCmd string, deployCmd string, workdir string) *WebhookServer {
-	return &WebhookServer{
-		preBuildCmd: preBuildCmd,
-		buildCmd:    buildCmd,
-		deployCmd:   deployCmd,
-		workdir:     workdir,
-		podswapReq:  make(chan bool, 50),
+func NewServer(arguments *Arguments) (*WebhookServer, error) {
+	cfg, err := NewConfig(arguments.YmlPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
+	return &WebhookServer{
+		arguments:  arguments,
+		Config:     cfg,
+		podswapReq: make(chan bool, 50),
+	}, nil
+}
+
+func (s *WebhookServer) PrintData() {
+	slog.Info(fmt.Sprintf("using pre-build-cmd %q", s.Config.PreBuildCmd))
+	slog.Info(fmt.Sprintf("using build-cmd %q", s.Config.BuildCmd))
+	slog.Info(fmt.Sprintf("using deploy-cmd %q", s.Config.DeployCmd))
+	slog.Info(fmt.Sprintf("using projectPath %q", s.arguments.ProjectPath))
+	slog.Info(fmt.Sprintf("using ymlPath %q", s.arguments.YmlPath))
 }
 
 func (s *WebhookServer) WebhookHandler(response http.ResponseWriter, request *http.Request) {
@@ -91,7 +99,7 @@ func (s *WebhookServer) commandRunner(ctx context.Context) {
 		default:
 			cmd = exec.CommandContext(cmdTimeoutCtx, args[0], args[1:]...)
 		}
-		cmd.Dir = s.workdir
+		cmd.Dir = s.arguments.ProjectPath
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			return string(out), fmt.Errorf("failed to run buildCmd: %w", err)
@@ -110,23 +118,35 @@ func (s *WebhookServer) commandRunner(ctx context.Context) {
 			// TODO: command argument for timeout duration
 			timeout := time.Second * 500
 
-			out, err := runPodswapReq(timeout, s.preBuildCmd)
+			out, err := runPodswapReq(timeout, s.Config.PreBuildCmd)
 			if err != nil {
-				slog.Error("pre-build command failed", slog.Any("err", err), slog.Any("output", out))
+				slog.Error("pre-build command failed", slog.Any("err", err))
 				continue
 			}
 			slog.Info("pre-build command succeeded", slog.Any("output", out))
 
-			out, err = runPodswapReq(timeout, s.buildCmd)
+			cfg, err := NewConfig(s.arguments.YmlPath)
 			if err != nil {
-				slog.Error("build command failed", slog.Any("err", err), slog.Any("output", out))
+				slog.Error("command runner failed to update config", slog.Any("err", err))
+				fmt.Print(out)
+				continue
+			}
+			s.Config = cfg
+			slog.Info("updated config")
+			s.PrintData()
+
+			out, err = runPodswapReq(timeout, s.Config.BuildCmd)
+			if err != nil {
+				slog.Error("build command failed", slog.Any("err", err))
+				fmt.Print(out)
 				continue
 			}
 			slog.Info("build command succeeded", slog.Any("output", out))
 
-			out, err = runPodswapReq(timeout, s.deployCmd)
+			out, err = runPodswapReq(timeout, s.Config.DeployCmd)
 			if err != nil {
-				slog.Error("deploy command failed", slog.Any("err", err), slog.Any("output", out))
+				slog.Error("deploy command failed", slog.Any("err", err))
+				fmt.Print(out)
 				continue
 			}
 			slog.Info("deploy command succeeded", slog.Any("output", out))

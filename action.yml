@@ -29,5 +29,5 @@ runs:
       shell: bash
       run: python3 send_push.py
       env:
-        WEBHOOK_SECRET: ${{ secrets.WebhookSecret }}
-        WEBHOOK_URL: ${{ secrets.WebhookUrl }}
+        WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+        WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
