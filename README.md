@@ -42,7 +42,7 @@ on:
 
 jobs:
   podswap:
-    uses: douglascdev/podswap/action.yml
+    uses: douglascdev/podswap/.github/workflows/action.yml
     with:
       pre-build-cmd: 'git pull'
       build-cmd: 'podman compose build'
