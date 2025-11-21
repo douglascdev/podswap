@@ -49,8 +49,8 @@ func ParseArguments(fs *flag.FlagSet, arguments []string) (result *Arguments, er
 		return nil
 	}
 
-	fs.Func("f", "root path for the project(default: working directory)", setProjectPath)
-	fs.Func("a", "path for the yml action file(default: working directory/.github/workflows/podswap.yml)", setYmlPath)
+	fs.Func("p", "root path for the project(default: working directory)", setProjectPath)
+	fs.Func("f", "path for the yml action file(default: working directory/.github/workflows/podswap.yml)", setYmlPath)
 
 	err = fs.Parse(arguments)
 	if err != nil {
