@@ -1,9 +1,8 @@
 # podswap
 
-PodSwap is a lightweight application designed to update your containers with almost no downtime. By listening for the `push` event in your GitHub repository, PodSwap re-builds and swaps your containers seamlessly.
+PodSwap is a lightweight application designed to update your containers with almost no downtime. By listening for events in your GitHub repository, PodSwap re-builds and swaps your containers automatically.
 
-This project is in its early stages, and we welcome feedback from users to help improve its functionality. 
-
+This project is in its early stages. Feel free to give feedback and contribute.
 
 
 ## Installation
@@ -65,6 +64,8 @@ NGROK_AUTHTOKEN=YOUR_TOKEN WEBHOOK_SECRET=YOUR_SECRET podswap -f YOUR_PROJECT_DI
 
 When a push is done on main, the listener will run the commands specified on the action file.
 
+Be aware of the implication here: `podswap` assumes the commands on your repository are safe and were written by you.
+
 ## Running with systemd
 
 Replace the `<>` fields with your config and add it to `~/.config/systemd/user/podswap.service`:
@@ -75,7 +76,7 @@ Description=podswap
 After=network-online.target
 
 [Service]
-ExecStart=/home/<YOUR USER>/go/bin/podswap -f PROJECT_DIR -a PROJECT_DIR/.github/workflows/podswap/yml
+ExecStart=/home/<YOUR USER>/go/bin/podswap -f PROJECT_DIR -a PROJECT_DIR/.github/workflows/podswap.yml
 Environment="NGROK_AUTHTOKEN=<YOUR TOKEN>"
 Environment="WEBHOOK_SECRET=<YOUR SECRET>"
 Restart=on-failure
