@@ -30,7 +30,7 @@ Usage of podswap:
 
 Step-by-step setup:
 - Set up an [ngrok account](https://dashboard.ngrok.com/signup) and get [your token](https://dashboard.ngrok.com/get-started/your-authtoken).
-- Create a `.github/workflows/podswap.yml` file with the contents:
+- Create a `.github/workflows/podswap.yml` file in your repository with the contents:
 
 ```yml
 name: podswap
@@ -54,7 +54,7 @@ jobs:
 
 - Create 2 secrets on your project's repo in  `Settings > Secrets and variables > Actions > New secret`:
   - `WEBHOOK_SECRET`: create a good secret(pretend it's a password).
-  - `WEBHOOK_URL`: paste the URL from [domains](https://dashboard.ngrok.com/domains).
+  - `WEBHOOK_URL`: paste the URL from [domains](https://dashboard.ngrok.com/domains), including the `https://` prefix.
 
 - Run the listener on your server:
 
