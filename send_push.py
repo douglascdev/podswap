@@ -17,6 +17,8 @@ def main():
     if not url:
         print("url not set")
         exit(1)
+    if not url.startswith("http"):
+        print("url missing http/https protocol")
 
     content = ""
     hash_object = hmac.new(
