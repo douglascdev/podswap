@@ -19,6 +19,11 @@ on:
         type: string
         required: false
         default: 'docker compose up -d --force-recreate'
+    secrets:
+      WEBHOOK_SECRET:
+        required: true
+      WEBHOOK_URL:
+        required: true
 jobs:
   send-push:
     runs-on: "ubuntu-24.04"
