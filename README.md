@@ -23,32 +23,45 @@ export PATH=$PATH:$HOME/go/bin
 
 ```bash
 Usage of podswap:
-  -pre-build-cmd value
-    	command to run after the webhook is triggered(default: "git pull").
-  -build-cmd value
-    	command to run after the pre-build command(default: "docker compose build").
-  -deploy-cmd value
-    	command to run after the build is finished(default: "docker compose up -d --force-recreate").
-  -workdir value
-    	working directory where containers will be deployed from(default: current directory).
+  -a value
+      path for the yml action file(default: working directory/.github/workflows/podswap.yml)
+  -f value
+      root path for the project(default: working directory)
 ```
 
 Step-by-step setup:
 - Set up an [ngrok account](https://dashboard.ngrok.com/signup) and get [your token](https://dashboard.ngrok.com/get-started/your-authtoken).
-- Run the podswap command once with:
-  - If you use docker: `NGROK_AUTHTOKEN=YOUR_TOKEN podswap`.
-  - If you use podman: `NGROK_AUTHTOKEN=YOUR_TOKEN podswap -build-cmd "podman compose build" -deploy-cmd "podman compose up -d --force-recreate"`.
-  - It's going to give you an URL in the terminal. Use it in the next step.
+- Create a `.github/workflows/podswap.yml` file with the contents:
 
-- Create a webhook by going to your repo's `Settings > Webhooks > Add webhook`.
-  - In the `Payload URL` field type the URL you got in the previous step.
-  - In the `Secret` field, you can make your own secret and type it there, you'll use it as an environment variable to run `podswap`.
+```yml
+on:
+  push:
+    branches:
+      - 'main'
 
-- Run `podswap` changing the arguments and environment variables as needed:
+jobs:
+  podswap:
+    uses: douglascdev/podswap@main
+    with:
+      pre-build-cmd: 'git pull'
+      build-cmd: 'podman compose build'
+      deploy-cmd: 'podman compose up -d --force-recreate'
+    secrets:
+      WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+      WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+```
+
+- Create 2 secrets on your project's repo in  `Settings > Secrets and variables > Actions > New secret`:
+  - `WEBHOOK_SECRET`: create a good secret(pretend it's a password).
+  - `WEBHOOK_URL`: paste the URL from [domains](https://dashboard.ngrok.com/domains).
+
+- Run the listener on your server:
 
 ```bash
-NGROK_AUTHTOKEN=YOUR_TOKEN WEBHOOK_SECRET=YOUR_SECRET podswap -build-cmd "podman compose build" -deploy-cmd "podman compose up -d --force-recreate"
+NGROK_AUTHTOKEN=YOUR_TOKEN WEBHOOK_SECRET=YOUR_SECRET podswap -a YOUR_PROJECT_DIR -f PATH_TO_WORKFLOW_FILE
 ```
+
+When a push is done on main, the listener will run the commands specified on the action file.
 
 ## Running with systemd
 
