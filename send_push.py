@@ -10,6 +10,14 @@ from requests import post
 def main():
     secret = getenv("WEBHOOK_SECRET", "")
     url = getenv("WEBHOOK_URL", "")
+
+    if not secret:
+        print("secret not set")
+        exit(1)
+    if not url:
+        print("url not set")
+        exit(1)
+
     content = ""
     hash_object = hmac.new(
         secret.encode("utf-8"), msg=content.encode("utf-8"), digestmod=sha256
